@@ -14,9 +14,10 @@ import static java.lang.Long.parseLong;
 
 public class HW1 {
 
+    static long maximumSize = 0;
     public static void main(String[] args) throws IOException {
 
-        System.setProperty("hadoop.home.dir", "C:\\Users\\guoah\\Downloads");
+        System.setProperty("hadoop.home.dir", "C:\\UNIPD\\big_data");
 
         if (args.length != 2) {
             throw new IllegalArgumentException("USAGE: num_partitions file_path");
@@ -38,6 +39,7 @@ public class HW1 {
         JavaPairRDD<String, Long> count;
         ArrayList<Long> ml = new ArrayList<>();  //array delle partition sizes
 
+
         // &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
         // CLASS COUNT
         // &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
@@ -49,6 +51,10 @@ public class HW1 {
                     HashMap<Long, String> counts = new HashMap<>();
                     ArrayList<Tuple2<Long, Tuple2<Long, String>>> pairs = new ArrayList<>();
 
+                    /*for(String line : entry){
+                        String[] lineSplitted = line.split(" ");
+
+                    }*/
                     counts.put(parseLong(entry[0]), entry[1]);
                     for (Map.Entry<Long, String> e : counts.entrySet()) {
                         pairs.add(new Tuple2<>((e.getKey()%K), new Tuple2<>(e.getKey(), e.getValue())));  //add deterministic id number to the tuples
@@ -68,6 +74,7 @@ public class HW1 {
                     return pairs.iterator();
                 })
                 .groupByKey()    // <-- REDUCE PHASE (R2)
+                .sortByKey()
                 .mapValues((it) -> {
                     long sum = 0;
                     for (long c : it) {
@@ -76,7 +83,7 @@ public class HW1 {
                     return sum;
                 });
 
-        System.out.println("output 1: " + count.collect());
+        System.out.println("output 1: " + count.collect().toString());
 
         // &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
         // CLASS COUNT with mapPartitions
@@ -102,7 +109,10 @@ public class HW1 {
                         counter++;
                     }
                     System.out.println("partition size: " + counter);
-                    ml.add(counter);   //NON FUNZIA
+                    if(counter > maximumSize){
+                        maximumSize = counter;
+                    }
+                    //ml.add(counter);   //NON FUNZIA
                     ArrayList<Tuple2<String, Long>> pairs = new ArrayList<>();
                     for (Map.Entry<String, Long> e : counts.entrySet()) {
                         pairs.add(new Tuple2<>(e.getKey(), e.getValue()));
@@ -117,7 +127,13 @@ public class HW1 {
                     }
                     return sum;
                 });
-        System.out.println("output 2: " + count.collect());
-        System.out.println(ml);
+        Tuple2<String, Long> maximum = new Tuple2<>("FirstElement", 0L);
+        for(Tuple2<String, Long> e : count.collect()){
+            if(e._2>maximum._2){
+                maximum = e;
+            }
+        }
+        System.out.println("output 2: " + maximum.toString());
+        System.out.println(maximumSize);
     }
 }
