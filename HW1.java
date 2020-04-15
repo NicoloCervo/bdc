@@ -135,5 +135,17 @@ public class HW1 {
         }
         System.out.println("output 2: " + maximum.toString());
         System.out.println(maximumSize);
+        
+        // &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+        // COMPUTE MAX FREQUENT CLASS
+        // &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+        JavaPairRDD<String, Long> temp = count;
+        Long max_freq = temp
+                .map((tuple) -> tuple._2())
+                .reduce((x, y) -> Math.max(x,y));
+
+        //System.out.println("Maximum freq:" + max_freq);
+        System.out.println("Most frequent class: "+ count.filter((tuple)-> tuple._2().equals(max_freq)).collect());
     }
 }
