@@ -14,9 +14,10 @@ import static java.lang.Long.parseLong;
 
 public class HW1 {
 
+    static long maximumSize = 0;
     public static void main(String[] args) throws IOException {
 
-        System.setProperty("hadoop.home.dir", "C:\\Users\\guoah\\Downloads");
+        System.setProperty("hadoop.home.dir", "C:\\UNIPD\\big_data");
 
         if (args.length != 2) {
             throw new IllegalArgumentException("USAGE: num_partitions file_path");
@@ -34,9 +35,14 @@ public class HW1 {
 
         long numdocs, numwords;
         numdocs = docs.count();
-        System.out.println("Number of documents = " + numdocs);
+        //System.out.println("Number of documents = " + numdocs);
         JavaPairRDD<String, Long> count;
         ArrayList<Long> ml = new ArrayList<>();  //array delle partition sizes
+
+        System.out.println("INPUT:\n");
+        System.out.println("** K="+K);
+        System.out.println("** DATASET: "+args[1]+"\n");
+
 
         // &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
         // CLASS COUNT
@@ -48,7 +54,6 @@ public class HW1 {
                     String[] entry = document.split(" ");
                     HashMap<Long, String> counts = new HashMap<>();
                     ArrayList<Tuple2<Long, Tuple2<Long, String>>> pairs = new ArrayList<>();
-
                     counts.put(parseLong(entry[0]), entry[1]);
                     for (Map.Entry<Long, String> e : counts.entrySet()) {
                         pairs.add(new Tuple2<>((e.getKey()%K), new Tuple2<>(e.getKey(), e.getValue())));  //add deterministic id number to the tuples
@@ -68,6 +73,7 @@ public class HW1 {
                     return pairs.iterator();
                 })
                 .groupByKey()    // <-- REDUCE PHASE (R2)
+                .sortByKey()
                 .mapValues((it) -> {
                     long sum = 0;
                     for (long c : it) {
@@ -76,7 +82,9 @@ public class HW1 {
                     return sum;
                 });
 
-        System.out.println("output 1: " + count.collect());
+        System.out.println("OUTPUT:\n");
+        System.out.println("VERSION WITH DETERMINISTIC PARTITIONS");
+        System.out.println("Output pairs = " + count.collect().toString());
 
         // &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
         // CLASS COUNT with mapPartitions
@@ -101,8 +109,11 @@ public class HW1 {
                         counts.put(tuple._2(), 1L + counts.getOrDefault(tuple._2(), 0L));
                         counter++;
                     }
-                    System.out.println("partition size: " + counter);
-                    ml.add(counter);   //NON FUNZIA
+                    //System.out.println("partition size: " + counter);
+                    if(counter > maximumSize){
+                        maximumSize = counter;
+                    }
+                    //ml.add(counter);   //NON FUNZIA
                     ArrayList<Tuple2<String, Long>> pairs = new ArrayList<>();
                     for (Map.Entry<String, Long> e : counts.entrySet()) {
                         pairs.add(new Tuple2<>(e.getKey(), e.getValue()));
@@ -117,7 +128,19 @@ public class HW1 {
                     }
                     return sum;
                 });
-        System.out.println("output 2: " + count.collect());
-        System.out.println(ml);
+
+        // &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+        // COMPUTE MAX FREQUENT CLASS
+        // &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+        JavaPairRDD<String, Long> temp = count;
+        Long max_freq = temp
+                .map((tuple) -> tuple._2())
+                .reduce((x, y) -> Math.max(x,y));
+
+
+        System.out.println("VERSION WITH SPARK PARTITIONS");
+        System.out.println("Most frequent class = "+ count.filter((tuple)-> tuple._2().equals(max_freq)).sortByKey().first());
+        System.out.println("Max partition size = "+ maximumSize);
     }
 }
