@@ -54,8 +54,10 @@ public class HW1 {
                     String[] entry = document.split(" ");
                     HashMap<Long, String> counts = new HashMap<>();
                     ArrayList<Tuple2<Long, Tuple2<Long, String>>> pairs = new ArrayList<>();
+                    //entries in the document are in the format "id class""
                     counts.put(parseLong(entry[0]), entry[1]);
                     for (Map.Entry<Long, String> e : counts.entrySet()) {
+                        //pairs (id,class) are mapped in (id%K,(id,class))
                         pairs.add(new Tuple2<>((e.getKey()%K), new Tuple2<>(e.getKey(), e.getValue())));  //add deterministic id number to the tuples
                     }
                     return pairs.iterator();
@@ -64,6 +66,7 @@ public class HW1 {
                 .flatMapToPair((triplet) -> {
                     HashMap<String, Long> counts = new HashMap<>();
                     for (Tuple2<Long, String> c : triplet._2()) {
+                        //counts contains classes and how many times the classes occour in a group 
                         counts.put(c._2(), 1L + counts.getOrDefault(c._2(), 0L));
                     }
                     ArrayList<Tuple2<String, Long>> pairs = new ArrayList<>();
@@ -110,10 +113,10 @@ public class HW1 {
                         counter++;
                     }
                     //System.out.println("partition size: " + counter);
+                    //find the maximum partition size based on "counter" variable = number of tuples processed in the current partition
                     if(counter > maximumSize){
                         maximumSize = counter;
                     }
-                    //ml.add(counter);   //NON FUNZIA
                     ArrayList<Tuple2<String, Long>> pairs = new ArrayList<>();
                     for (Map.Entry<String, Long> e : counts.entrySet()) {
                         pairs.add(new Tuple2<>(e.getKey(), e.getValue()));
