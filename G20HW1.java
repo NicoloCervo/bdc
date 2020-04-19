@@ -12,7 +12,7 @@ import java.util.*;
 
 import static java.lang.Long.parseLong;
 
-public class HW1 {
+public class G20HW1 {
 
     static long maximumSize = 0;
     public static void main(String[] args) throws IOException {
