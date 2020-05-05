@@ -37,7 +37,7 @@ public class HW2 {
 
     public static double exactMPD(ArrayList<Vector> S){
         double maxDist=0;
-        //try every possible pair and keep maximum distance found, i ran it only on small and aircraft
+        //try every possible pair and keep maximum distance found, I ran it only on small and aircraft, takes to long on the others
         for(int i=0;i<S.size();i++){
             for(int j=i;j<S.size();j++){
                 double dist = Math.sqrt(Vectors.sqdist(S.get(i),S.get(j)));
