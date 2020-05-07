@@ -17,25 +17,31 @@ public class HW2 {
         inputPoints = readVectorsSeq(filename);
 
         //int k = Integer.parseInt(args[1]);
-        //System.out.println(k);
 
+        System.out.println("EXACT ALGORITHM");
         //run methods and print times
         long startTime = System.nanoTime();
-        //System.out.println(exactMPD(inputPoints));
-        System.out.println("exactMDP time " + (System.nanoTime()-startTime)/1000000+" millisec");
+        //System.out.println("Max distance = "+ exactMPD(inputPoints));
+        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000+" millisec");
 
+        System.out.println("2-APPROXIMATION ALGORITHM");
+        System.out.println("K = "+k);
         startTime = System.nanoTime();
-        System.out.println(twoApproxMPD(inputPoints,5000));
-        System.out.println("approxMDP time " + (System.nanoTime()-startTime)/1000000+" millisec");
+        System.out.println("Max distance = "+twoApproxMPD(inputPoints,5000));
+        System.out.println("Running time = "+ (System.nanoTime()-startTime)/1000000+" millisec");
 
         //twoApprox empties the array so read again, should pass a copy!!!
         inputPoints = readVectorsSeq(filename);
+        
+        ArrayList<Vector> centers = kCenterMPD(inputPoints, k);
 
+        System.out.println("k-CENTER-BASED ALGORITHM");
+        System.out.println("K = "+k);
         startTime = System.nanoTime();
-        System.out.println(kCenterMPD(inputPoints,5));
-        System.out.println("kCenterMDP time " + (System.nanoTime()-startTime)/1000000+" millisec");
+        System.out.println(exactMPD(centers));
+        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000+" millisec");
 
-        System.out.println(exactMPD(kCenterMPD(inputPoints,5)));
+        //System.out.println(exactMPD(kCenterMPD(inputPoints,5)));
     }
 
     public static double exactMPD(ArrayList<Vector> S){
