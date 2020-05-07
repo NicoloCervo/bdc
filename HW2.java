@@ -16,6 +16,9 @@ public class HW2 {
         //load file
         inputPoints = readVectorsSeq(filename);
 
+        //int k = Integer.parseInt(args[1]);
+        //System.out.println(k);
+
         //run methods and print times
         long startTime = System.nanoTime();
         //System.out.println(exactMPD(inputPoints));
@@ -50,7 +53,10 @@ public class HW2 {
     }
 
     //try shuffling the array and using the first k elements as subset, should be faster
-    public static double twoApproxMPD(ArrayList<Vector> S, int k){
+    public static double twoApproxMPD(ArrayList<Vector> S, int k) throws IOException{
+        if(k>=S.size()){
+            throw new IllegalArgumentException("Integer k greater than the cardinality of input set");
+        }
         Random rand = new Random();
         rand.setSeed(1237541);
         double dist, maxDist=0;
@@ -71,7 +77,10 @@ public class HW2 {
         return maxDist;
     }
 
-    public static ArrayList<Vector> kCenterMPD(ArrayList<Vector> S, int k){
+    public static ArrayList<Vector> kCenterMPD(ArrayList<Vector> S, int k) throws IOException{
+        if(k>=S.size()){
+            throw new IllegalArgumentException("Integer k greater than the cardinality of input set");
+        }
         Random rand = new Random();
         rand.setSeed(1237541);
         //array of the distances of each point to the closest center
@@ -80,6 +89,7 @@ public class HW2 {
         //put random point in centers
         centers.add( S.get(rand.nextInt(S.size())) );
         double maxDist, dist;
+        //int idx;
         for(int j=0; j<k-1; j++) {
             maxDist=0;
             //add another point because i cant use ArrayLists
@@ -98,10 +108,12 @@ public class HW2 {
                 if (minDists.get(i) > maxDist) {
                     maxDist = minDists.get(i);
                     //probably there is a better way to insert the new center in the ArrayList
+                    //idx=i;
                     centers.remove(j+1);
                     centers.add(j+1, S.get(i));
                 }
             }
+            //centers.add(j+1, S.remove(idx));
         }
         return centers;
     }
