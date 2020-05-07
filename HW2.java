@@ -30,9 +30,6 @@ public class HW2 {
         System.out.println("Max distance = "+twoApproxMPD(inputPoints,k));
         System.out.println("Running time = "+ (System.nanoTime()-startTime)/1000000000+" s\n");
 
-        //twoApprox empties the array so read again, should pass a copy!!!
-        //inputPoints = readVectorsSeq(filename);
-
         System.out.println("k-CENTER-BASED ALGORITHM");
         System.out.println("K = "+k);
         startTime = System.nanoTime();
@@ -45,12 +42,12 @@ public class HW2 {
     public static double exactMPD(ArrayList<Vector> S){
         double maxDist=0;
         //try every possible pair and keep maximum distance found
-        for(int i=0;i<S.size();i++){
-            for(int j=0;j<S.size();j++){
-                double dist = Math.sqrt(Vectors.sqdist(S.get(i),S.get(j)));
-                if(dist>maxDist){
+        for(Vector vector1 : S){
+            for (Vector vector2 : S) {
+                double dist = Math.sqrt(Vectors.sqdist(vector1, vector2));
+                if (dist > maxDist) {
 
-                    maxDist=dist;
+                    maxDist = dist;
                 }
             }
         }
