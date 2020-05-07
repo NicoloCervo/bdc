@@ -34,17 +34,20 @@ public class HW2 {
         System.out.println("2-APPROXIMATION ALGORITHM");
         startingTime = System.currentTimeMillis();
         k = inputPoints.size()/2;
+        //Copy the arraylist
+        ArrayList<Vector> copied = new ArrayList<>(inputPoints);
         System.out.println("k = " + k);
-        maxDistance = twoApproxMPD(inputPoints, k);;
+        maxDistance = twoApproxMPD(copied, k);;
         System.out.println("Max Distance = " + maxDistance);
         finishTime = System.currentTimeMillis();
         System.out.println("Running time = "+ (finishTime-startingTime) + " ms\n");
 
         System.out.println("k-CENTER-BASED ALGORITHM");
         startingTime = System.currentTimeMillis();
-        k = 5;
+        k = 40;
         System.out.println("k = " + k);
-        ArrayList<Vector> centers = kCenterMPD(inputPoints, k);
+        ArrayList<Vector> copied2 = new ArrayList<>(inputPoints);
+        ArrayList<Vector> centers = kCenterMPD(copied2, k);
         maxDistance = exactMPD(centers);
         System.out.println("Max Distance = " + maxDistance);
         finishTime = System.currentTimeMillis();
