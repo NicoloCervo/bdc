@@ -16,41 +16,40 @@ public class HW2 {
         //load file
         inputPoints = readVectorsSeq(filename);
 
-        //int k = Integer.parseInt(args[1]);
+        int k = Integer.parseInt(args[1]);
 
-        System.out.println("EXACT ALGORITHM");
         //run methods and print times
-        long startTime = System.nanoTime();
-        //System.out.println("Max distance = "+ exactMPD(inputPoints));
-        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000+" millisec");
+        System.out.println("EXACT ALGORITHM");
+        double startTime = System.nanoTime();
+        System.out.println("Max distance = "+ exactMPD(inputPoints));  //TAKES A LOT OF TIME FOR MEDIUM AND LARGE
+        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000000+" s\n");
 
         System.out.println("2-APPROXIMATION ALGORITHM");
         System.out.println("K = "+k);
         startTime = System.nanoTime();
-        System.out.println("Max distance = "+twoApproxMPD(inputPoints,5000));
-        System.out.println("Running time = "+ (System.nanoTime()-startTime)/1000000+" millisec");
+        System.out.println("Max distance = "+twoApproxMPD(inputPoints,k));
+        System.out.println("Running time = "+ (System.nanoTime()-startTime)/1000000000+" s\n");
 
         //twoApprox empties the array so read again, should pass a copy!!!
-        inputPoints = readVectorsSeq(filename);
-        
-        ArrayList<Vector> centers = kCenterMPD(inputPoints, k);
+        //inputPoints = readVectorsSeq(filename);
 
         System.out.println("k-CENTER-BASED ALGORITHM");
         System.out.println("K = "+k);
         startTime = System.nanoTime();
-        System.out.println(exactMPD(centers));
-        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000+" millisec");
-
-        //System.out.println(exactMPD(kCenterMPD(inputPoints,5)));
+        ArrayList<Vector> centers = kCenterMPD(inputPoints, k);
+        //System.out.println("CENTERS: "+centers);
+        System.out.println("Max distance = "+exactMPD(centers));
+        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000000+" s\n");
     }
 
     public static double exactMPD(ArrayList<Vector> S){
         double maxDist=0;
-        //try every possible pair and keep maximum distance found, I ran it only on small and aircraft, takes to long on the others
+        //try every possible pair and keep maximum distance found
         for(int i=0;i<S.size();i++){
-            for(int j=i;j<S.size();j++){
+            for(int j=0;j<S.size();j++){
                 double dist = Math.sqrt(Vectors.sqdist(S.get(i),S.get(j)));
                 if(dist>maxDist){
+
                     maxDist=dist;
                 }
             }
@@ -58,21 +57,24 @@ public class HW2 {
         return  maxDist;
     }
 
-    //try shuffling the array and using the first k elements as subset, should be faster
+    //IDEA: try shuffling the array and using the first k elements as subset,
+    // should be faster and only shuffles original array so no need to copy
     public static double twoApproxMPD(ArrayList<Vector> S, int k) throws IOException{
         if(k>=S.size()){
             throw new IllegalArgumentException("Integer k greater than the cardinality of input set");
         }
+        //create copy to avoid modifications to the original
+        ArrayList<Vector> copy = new ArrayList<>(S);
         Random rand = new Random();
         rand.setSeed(1237541);
         double dist, maxDist=0;
         //move k vectors to subset
         ArrayList<Vector> subset = new ArrayList<>();
         for(int i=0;i<k;i++){
-            subset.add(S.remove(rand.nextInt(S.size())));
+            subset.add(copy.remove(rand.nextInt(copy.size())));
         }
         //check distance between all pairs {(v1,v2): v1 € S, v2 € subset}
-        for (Vector v1 : S) {
+        for (Vector v1 : copy) {
             for (Vector v2 : subset) {
                 dist = Math.sqrt(Vectors.sqdist(v1, v2));
                 if (dist > maxDist) {
@@ -95,13 +97,12 @@ public class HW2 {
         //put random point in centers
         centers.add( S.get(rand.nextInt(S.size())) );
         double maxDist, dist;
-        //int idx;
+        int idx=0;
         for(int j=0; j<k-1; j++) {
+            // max distance from the current set of centers
             maxDist=0;
-            //add another point because i cant use ArrayLists
-            centers.add(S.get(0));
             for(int i=0; i<S.size(); i++) {
-                //distane between
+                //distance between
                 dist=Vectors.sqdist(centers.get(j), S.get(i));
                 //only for the first center fill minDists with the distances between it and every other point
                 if(j==0) {
@@ -113,13 +114,10 @@ public class HW2 {
                 //if a bigger distance is found update the next center to the current point
                 if (minDists.get(i) > maxDist) {
                     maxDist = minDists.get(i);
-                    //probably there is a better way to insert the new center in the ArrayList
-                    //idx=i;
-                    centers.remove(j+1);
-                    centers.add(j+1, S.get(i));
+                    idx=i;
                 }
             }
-            //centers.add(j+1, S.remove(idx));
+            centers.add(S.get(idx));
         }
         return centers;
     }
