@@ -7,7 +7,10 @@ import java.util.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-public class HW2 {
+public class G20HW2 {
+
+    static final long SEED = 1238164;
+
     public static void main(String[] args) throws IOException {
 
         String filename = args[0];
@@ -22,13 +25,13 @@ public class HW2 {
         System.out.println("EXACT ALGORITHM");
         double startTime = System.nanoTime();
         System.out.println("Max distance = "+ exactMPD(inputPoints));  //TAKES A LOT OF TIME FOR MEDIUM AND LARGE
-        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000000+" s\n");
+        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000+" ms\n");
 
         System.out.println("2-APPROXIMATION ALGORITHM");
         System.out.println("K = "+k);
         startTime = System.nanoTime();
         System.out.println("Max distance = "+twoApproxMPD(inputPoints,k));
-        System.out.println("Running time = "+ (System.nanoTime()-startTime)/1000000000+" s\n");
+        System.out.println("Running time = "+ (System.nanoTime()-startTime)/1000000+" ms\n");
 
         System.out.println("k-CENTER-BASED ALGORITHM");
         System.out.println("K = "+k);
@@ -36,7 +39,7 @@ public class HW2 {
         ArrayList<Vector> centers = kCenterMPD(inputPoints, k);
         //System.out.println("CENTERS: "+centers);
         System.out.println("Max distance = "+exactMPD(centers));
-        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000000+" s\n");
+        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000+" ms\n");
     }
 
     public static double exactMPD(ArrayList<Vector> S){
@@ -54,8 +57,6 @@ public class HW2 {
         return  maxDist;
     }
 
-    //IDEA: try shuffling the array and using the first k elements as subset,
-    // should be faster and only shuffles original array so no need to copy
     public static double twoApproxMPD(ArrayList<Vector> S, int k) throws IOException{
         if(k>=S.size()){
             throw new IllegalArgumentException("Integer k greater than the cardinality of input set");
@@ -63,7 +64,7 @@ public class HW2 {
         //create copy to avoid modifications to the original
         ArrayList<Vector> copy = new ArrayList<>(S);
         Random rand = new Random();
-        rand.setSeed(1237541);
+        rand.setSeed(SEED);
         double dist, maxDist=0;
         //move k vectors to subset
         ArrayList<Vector> subset = new ArrayList<>();
@@ -87,7 +88,7 @@ public class HW2 {
             throw new IllegalArgumentException("Integer k greater than the cardinality of input set");
         }
         Random rand = new Random();
-        rand.setSeed(1237541);
+        rand.setSeed(SEED);
         //array of the distances of each point to the closest center
         ArrayList<Double> minDists = new ArrayList<>(S.size());
         ArrayList<Vector> centers = new ArrayList<>();
