@@ -113,11 +113,43 @@ public class G20HW3 {
     * the k points computed by runSequential(coreset,k)
     * */
 
-    public static void runMapReduce(JavaRDD<Double> pointsRDD,int k, int L){}
+    public static ArrayList<Vector> runMapReduce(JavaRDD<Vector> pointsRDD,int k, int L){
+        long startTime = System.currentTimeMillis();
+
+        JavaRDD<Vector> mom = pointsRDD.mapPartitions((vectorIterator)->{
+            ArrayList<Vector> temp = new ArrayList<>();
+            while (vectorIterator.hasNext()){
+                temp.add(vectorIterator.next());
+            }
+            return kCenterMPD(temp,k).iterator();
+        });
+        long endTime = System.currentTimeMillis();
+        System.out.println("Runtime of Round 1 = " + (endTime-startTime)+"ms");
+
+        startTime = System.currentTimeMillis();
+        List<List<Vector>> out = mom.glom().collect();
+        ArrayList<Vector> coreset = new ArrayList<>();
+        for(List<Vector> l: out){
+            coreset.addAll(l);
+        }
+        ArrayList<Vector> finalPoints = runSequential(coreset, k);
+        endTime = System.currentTimeMillis();
+        System.out.println("Runtime of Round 2 = " + (endTime-startTime)+"ms");
+
+        return finalPoints;
+    }
 
     //receives in input a set of points (pointSet) and computes the average distance between all pairs of points.
     public static Double measure(ArrayList<Vector> pointsSet){
-        return null;
+        Double s = 0.0;
+        int d = 0;
+        for(int i = 0;i<pointsSet.size();i++){
+            for (int j = i; j<pointsSet.size();j++){
+                s = s + Math.sqrt(Vectors.sqdist(pointsSet.get(i),pointsSet.get(j)));
+                d += 1;
+            }
+        }
+        return s/d;
     }
 
 }
