@@ -2,11 +2,13 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
+import scala.Tuple2;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class G20HW3 {
@@ -31,16 +33,23 @@ public class G20HW3 {
         int L = Integer.parseInt(args[2]); // number of partitions
         String inputPath = args[0]; //file path
 
+        //Start time
+        long startTime = System.currentTimeMillis();
         //reading the points in a JavaRDD
-        JavaRDD<Vector> inputPoints = sc.textFile(inputPath).map((str)->{
-            String[] tokens = str.split(",");
-            double[] data = new double[tokens.length];
-            for (int i=0; i<tokens.length; i++) {
-                data[i] = Double.parseDouble(tokens[i]);
-            }
-            return Vectors.dense(data);
-        }).repartition(L).cache();
+        JavaRDD<Vector> inputPoints = sc.textFile(inputPath).map(G20HW3::strToVector).repartition(L).cache();
         long numdocs =  inputPoints.count(); //force the loading for avoiding lazy evaluation
+        //Start time
+        long endTime = System.currentTimeMillis();
+
+        System.out.println("Number of points = " + numdocs);
+        System.out.println("K = " + K);
+        System.out.println("L = " + L);
+        System.out.println("Initialization time = " + (endTime-startTime)+"ms\n");
+
+
+        ArrayList<Vector> fin = runMapReduce(inputPoints, K, L);
+        double averageDistance = measure(fin);
+        System.out.println("Average distance = " + averageDistance);
 
     }
 
@@ -116,7 +125,7 @@ public class G20HW3 {
     public static ArrayList<Vector> runMapReduce(JavaRDD<Vector> pointsRDD,int k, int L){
         long startTime = System.currentTimeMillis();
 
-        JavaRDD<Vector> mom = pointsRDD.mapPartitions((vectorIterator)->{
+        JavaRDD<Vector> cent = pointsRDD.mapPartitions((vectorIterator)->{
             ArrayList<Vector> temp = new ArrayList<>();
             while (vectorIterator.hasNext()){
                 temp.add(vectorIterator.next());
@@ -127,16 +136,20 @@ public class G20HW3 {
         System.out.println("Runtime of Round 1 = " + (endTime-startTime)+"ms");
 
         startTime = System.currentTimeMillis();
-        List<List<Vector>> out = mom.glom().collect();
-        ArrayList<Vector> coreset = new ArrayList<>();
-        for(List<Vector> l: out){
-            coreset.addAll(l);
-        }
-        ArrayList<Vector> finalPoints = runSequential(coreset, k);
+        List<Vector> out = cent.collect();
         endTime = System.currentTimeMillis();
-        System.out.println("Runtime of Round 2 = " + (endTime-startTime)+"ms");
+        long par1 = endTime-startTime; //first partial interval
+        ArrayList<Vector> coreset = new ArrayList<>();
+        for (int i=0; i<out.size();i++){
+            coreset.add(out.get(i));
+        }
+        startTime = System.currentTimeMillis();
+        ArrayList<Vector> selectedPoints = runSequential(coreset, k);
+        endTime = System.currentTimeMillis();
+        long par2 = endTime-startTime; //second partial interval ---> for avoiding to count the time for the FOR loop
+        System.out.println("Runtime of Round 2 = " + (par1+par2) +"ms");
 
-        return finalPoints;
+        return selectedPoints;
     }
 
     //receives in input a set of points (pointSet) and computes the average distance between all pairs of points.
@@ -144,7 +157,7 @@ public class G20HW3 {
         Double s = 0.0;
         int d = 0;
         for(int i = 0;i<pointsSet.size();i++){
-            for (int j = i; j<pointsSet.size();j++){
+            for (int j = i+1; j<pointsSet.size();j++){
                 s = s + Math.sqrt(Vectors.sqdist(pointsSet.get(i),pointsSet.get(j)));
                 d += 1;
             }
@@ -152,4 +165,48 @@ public class G20HW3 {
         return s/d;
     }
 
+    public static ArrayList<Vector> kCenterMPD(ArrayList<Vector> S, int k) throws IOException{
+        if(k>=S.size()){
+            throw new IllegalArgumentException("Integer k greater than the cardinality of input set");
+        }
+        Random rand = new Random();
+        rand.setSeed(1238164);
+        //array of the distances of each point to the closest center
+        ArrayList<Double> minDists = new ArrayList<>(S.size());
+        ArrayList<Vector> centers = new ArrayList<>();
+        //put random point in centers
+        centers.add( S.get(rand.nextInt(S.size())) );
+        double maxDist, dist;
+        int idx=0;
+        for(int j=0; j<k-1; j++) {
+            // max distance from the current set of centers
+            maxDist=0;
+            for(int i=0; i<S.size(); i++) {
+                //distance between
+                dist=Vectors.sqdist(centers.get(j), S.get(i));
+                //only for the first center fill minDists with the distances between it and every other point
+                if(j==0) {
+                    minDists.add(i, dist);
+                    //for the other centers update minDists only if a smaller distance is found
+                }else{
+                    minDists.set( i, Math.min(minDists.get(i), dist) );
+                }
+                //if a bigger distance is found update the next center to the current point
+                if (minDists.get(i) > maxDist) {
+                    maxDist = minDists.get(i);
+                    idx=i;
+                }
+            }
+            centers.add(S.get(idx));
+        }
+        return centers;
+    }
+    public static Vector strToVector(String str) {
+        String[] tokens = str.split(",");
+        double[] data = new double[tokens.length];
+        for (int i=0; i<tokens.length; i++) {
+            data[i] = Double.parseDouble(tokens[i]);
+        }
+        return Vectors.dense(data);
+    }
 }
