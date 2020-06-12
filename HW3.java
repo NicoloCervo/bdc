@@ -36,11 +36,16 @@ public class HW3 {
         JavaRDD<Vector> filePartitions = sc.textFile(args[0]).map(HW3::strToVector).repartition(L).cache();
 
         ArrayList<Vector> inputPoints = readVectorsSeq(args[0]);
-        ArrayList<Vector> result = runSequential(inputPoints, K);
-        System.out.println("sequential: "+ result+"\n avg dist: "+ avgDistance(result));
 
+        double startTime = System.nanoTime();
+        ArrayList<Vector> result = new ArrayList<>();//runSequential(inputPoints, K);
+        System.out.println("sequential: "+ result+"\n avg dist: "+ avgDistance(result));
+        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000000+" s\n");
+
+        startTime = System.nanoTime();
         result = runMapReduce(filePartitions, K, L);
-        System.out.println("mapReduce:  " + result+"\n avg dist: "+ avgDistance(result));
+        System.out.println("avg dist: "+ avgDistance(result));
+        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000000+" s\n");
     }
 
     public static ArrayList<Vector> runSequential(final ArrayList<Vector> points, int k) {
@@ -99,19 +104,21 @@ public class HW3 {
     public static ArrayList<Vector> runMapReduce(JavaRDD<Vector> pointsRDD, int k, int L){
         System.out.println("num partitions: "+ pointsRDD.partitions().size());
         JavaRDD<Vector> centers = pointsRDD
-            .mapPartitions((points)->{
+            .mapPartitions((points)->{ //round1
+                System.out.println("mapPartitions");
                 //move vectors in array
                 ArrayList<Vector> pointsA = new ArrayList<>();
                 while (points.hasNext())  pointsA.add(points.next());
-                
+
                 //return k centers found with Furthest First Traversal
                 return kCenterMPD(pointsA, k).iterator();
             });
         ArrayList<Vector> coreset = new ArrayList<>();
-        for(int i=0; i< centers.collect().toArray().length; i++){
-            coreset.add(centers.collect().get(i));
+        List<Vector> collection = centers.collect();
+        for(int i=0; i< collection.toArray().length; i++){
+            coreset.add(collection.get(i));
         }
-        return runSequential(coreset, k);
+        return runSequential(coreset, k);// round2
     }
 
     //Support methods
