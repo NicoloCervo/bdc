@@ -33,19 +33,17 @@ public class HW3 {
         int L = Integer.parseInt(args[2]);
 
         // Read input file and subdivide it into L random partitions
+        double startTime = System.currentTimeMillis();
         JavaRDD<Vector> filePartitions = sc.textFile(args[0]).map(HW3::strToVector).repartition(L).cache();
 
-        ArrayList<Vector> inputPoints = readVectorsSeq(args[0]);
+        System.out.println("number of points = "+ filePartitions.count());
+        System.out.println("L = "+ L);
+        System.out.println("K = "+ K);
+        System.out.println("Initialization time = "+ (System.currentTimeMillis()-startTime) +" ms");
+        ArrayList<Vector> result = new ArrayList<>();
 
-        double startTime = System.nanoTime();
-        ArrayList<Vector> result = new ArrayList<>();//runSequential(inputPoints, K);
-        System.out.println("sequential: "+ result+"\n avg dist: "+ avgDistance(result));
-        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000000+" s\n");
-
-        startTime = System.nanoTime();
         result = runMapReduce(filePartitions, K, L);
-        System.out.println("avg dist: "+ avgDistance(result));
-        System.out.println("Running time = " + (System.nanoTime()-startTime)/1000000000+" s\n");
+        System.out.println("average distance: "+ avgDistance(result));
     }
 
     public static ArrayList<Vector> runSequential(final ArrayList<Vector> points, int k) {
@@ -102,10 +100,9 @@ public class HW3 {
     } // END runSequential
 
     public static ArrayList<Vector> runMapReduce(JavaRDD<Vector> pointsRDD, int k, int L){
-        System.out.println("num partitions: "+ pointsRDD.partitions().size());
+        double startTime = System.currentTimeMillis();
         JavaRDD<Vector> centers = pointsRDD
             .mapPartitions((points)->{ //round1
-                System.out.println("mapPartitions");
                 //move vectors in array
                 ArrayList<Vector> pointsA = new ArrayList<>();
                 while (points.hasNext())  pointsA.add(points.next());
@@ -113,12 +110,17 @@ public class HW3 {
                 //return k centers found with Furthest First Traversal
                 return kCenterMPD(pointsA, k).iterator();
             });
-        ArrayList<Vector> coreset = new ArrayList<>();
+
+        System.out.println("Runtime of round 1 time = "+(System.currentTimeMillis()-startTime) +" ms");
+        startTime = System.currentTimeMillis();
+        ArrayList<Vector> coreset = new ArrayList<>();  // round2
         List<Vector> collection = centers.collect();
         for(int i=0; i< collection.toArray().length; i++){
             coreset.add(collection.get(i));
         }
-        return runSequential(coreset, k);// round2
+        ArrayList<Vector> result = runSequential(coreset, k);
+        System.out.println("Runtime of round 2 time = "+(System.currentTimeMillis()-startTime) +" ms");
+        return result;
     }
 
     //Support methods
